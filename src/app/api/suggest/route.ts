@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
 
     const filtered = filterSuggestions(parsed, cashtag);
     const backfilled = backfillFromCandidates(filtered, candidates, preferredChain);
-    const suggestions = enrichWithBirdeye(backfilled, birdeyeMap);
+    const suggestions = enrichWithBirdeye(backfilled, birdeyeMap, preferredChain);
 
     return NextResponse.json({ suggestions });
   } catch (err) {

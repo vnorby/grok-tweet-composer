@@ -149,5 +149,13 @@ export function searchIndex(
     return 0;
   });
 
-  return results.slice(0, 10);
+  // Deduplicate by ticker after sorting — keeps the highest-priority entry per
+  // ticker (chain-preferred for the user). Prevents showing USDC_SOL + USDC_ETH
+  // as two separate placeholder rows.
+  const seen = new Set<string>();
+  return results.filter((t) => {
+    if (seen.has(t.ticker)) return false;
+    seen.add(t.ticker);
+    return true;
+  }).slice(0, 10);
 }

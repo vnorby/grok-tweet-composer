@@ -50,8 +50,13 @@ export const CRYPTO_FALLBACK: IndexToken[] = [
   { ticker: "WBTC",  name: "Wrapped Bitcoin",      type: "crypto", chain: "ETH",  address: null, exchange: null },
   { ticker: "WETH",  name: "Wrapped Ether",        type: "crypto", chain: "ETH",  address: null, exchange: null },
   { ticker: "STETH", name: "Lido Staked Ether",   type: "crypto", chain: "ETH",  address: null, exchange: null },
-  { ticker: "USDC",  name: "USD Coin",             type: "crypto", chain: null,   address: null, exchange: null },
-  { ticker: "USDT",  name: "Tether",               type: "crypto", chain: null,   address: null, exchange: null },
+  // Multi-chain stablecoins — explicit SOL + ETH entries with known addresses.
+  // The live Birdeye SOL tokenlist often omits these, so we hardcode them to
+  // ensure SOL users always get the correct chain and contract address.
+  { ticker: "USDC",  name: "USD Coin",             type: "crypto", chain: "SOL",  address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", exchange: null },
+  { ticker: "USDC",  name: "USD Coin",             type: "crypto", chain: "ETH",  address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", exchange: null },
+  { ticker: "USDT",  name: "Tether",               type: "crypto", chain: "SOL",  address: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", exchange: null },
+  { ticker: "USDT",  name: "Tether",               type: "crypto", chain: "ETH",  address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", exchange: null },
   { ticker: "DAI",   name: "Dai",                  type: "crypto", chain: "ETH",  address: null, exchange: null },
   { ticker: "MANA",  name: "Decentraland",         type: "crypto", chain: "ETH",  address: null, exchange: null },
   { ticker: "SAND",  name: "The Sandbox",          type: "crypto", chain: "ETH",  address: null, exchange: null },

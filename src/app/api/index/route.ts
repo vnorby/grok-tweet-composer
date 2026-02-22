@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { IndexToken } from "@/types";
 import { STOCK_INDEX } from "@/lib/stockIndex";
+import { CRYPTO_FALLBACK } from "@/lib/cryptoFallback";
 import { BIRDEYE_CHAIN_MAP } from "@/lib/chains";
 
 // CoinGecko ID → chain abbreviation for tokens we know
@@ -138,14 +139,16 @@ async function fetchCoinGecko(): Promise<IndexToken[]> {
 }
 
 // ---------------------------------------------------------------------------
-// Deduplicate tokens — first occurrence wins (caller controls priority)
+// Deduplicate tokens — keyed by ticker:chain so each chain variant is kept.
+// First occurrence per (ticker, chain) pair wins — caller controls priority.
 // ---------------------------------------------------------------------------
 function dedup(tokens: IndexToken[]): IndexToken[] {
   const seen = new Set<string>();
   const out: IndexToken[] = [];
   for (const t of tokens) {
-    if (!seen.has(t.ticker)) {
-      seen.add(t.ticker);
+    const key = `${t.ticker}:${t.chain ?? "null"}`;
+    if (!seen.has(key)) {
+      seen.add(key);
       out.push(t);
     }
   }
@@ -188,8 +191,19 @@ export async function GET() {
     const base  = baseResult.status  === "fulfilled" ? baseResult.value  : [];
     const gecko = geckoResult.status === "fulfilled" ? geckoResult.value : [];
 
-    // Priority: Birdeye (has addresses) > CoinGecko (market cap coverage only)
-    warmCache = dedup([...sol, ...eth, ...base, ...gecko]);
+    // Priority: Birdeye (has addresses) > CoinGecko (market cap) > static fallback
+    // CRYPTO_FALLBACK provides SOL addresses for USDC/USDT that Birdeye SOL tokenlist omits
+    const deduped = dedup([...sol, ...eth, ...base, ...gecko, ...CRYPTO_FALLBACK]);
+
+    // Birdeye tokens win dedup but lack market cap. Back-fill it from CoinGecko
+    // so tokens like USDC and WBTC show a market cap even when their canonical
+    // entry came from Birdeye.
+    const geckoMcap = new Map(
+      gecko.filter((t) => t.marketCap != null).map((t) => [t.ticker, t.marketCap as number])
+    );
+    warmCache = deduped.map((t) =>
+      t.marketCap != null ? t : { ...t, marketCap: geckoMcap.get(t.ticker) ?? null }
+    );
     warmCacheTs = now;
   }
 

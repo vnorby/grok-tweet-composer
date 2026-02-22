@@ -62,19 +62,21 @@ export function backfillFromCandidates(
 // ---------------------------------------------------------------------------
 export function enrichWithBirdeye(
   suggestions: CashtagSuggestion[],
-  birdeyeMap: Map<string, { address: string; chain: string }>
+  birdeyeMap: Map<string, { address: string; chain: string }>,
+  preferredChain?: string | null
 ): CashtagSuggestion[] {
   return suggestions.map((s) => {
     const birdeye = birdeyeMap.get(s.ticker);
     if (!birdeye) return s;
-    // Birdeye sorts by global 24h volume, so for multi-chain tokens like USDC
-    // it always returns the highest-volume chain (usually ETH). If we already
-    // know the chain (from Grok + candidate backfill), don't override it.
-    if (s.chain && birdeye.chain !== s.chain) return s;
+    // Block Birdeye only if it disagrees with BOTH the suggestion chain AND
+    // the user's preferred chain. If Birdeye returns the preferred chain
+    // (e.g. SOL USDC for a SOL user), allow it to override even if the
+    // suggestion currently has a different chain (e.g. ETH from the index).
+    if (s.chain && birdeye.chain !== s.chain && birdeye.chain !== preferredChain) return s;
     return {
       ...s,
       address: birdeye.address,
-      chain: (s.chain ?? birdeye.chain) as CashtagSuggestion["chain"],
+      chain: (birdeye.chain ?? s.chain) as CashtagSuggestion["chain"],
     };
   });
 }
