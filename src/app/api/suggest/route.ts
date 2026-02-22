@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { tweetText, cashtag, user, userType, candidates, live = false } = body;
+  const { tweetText, cashtag, user, userType, candidates, preferredChain, live = false } = body;
 
   if (typeof tweetText !== "string" || tweetText.length > 280) {
     return NextResponse.json({ error: "Invalid tweetText" }, { status: 400 });
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
 
   const birdeyeKey = process.env.BIRDEYE_API_KEY;
 
-  const { system, user: userMessage } = buildGrokPrompt({ tweetText, cashtag, user, userType, candidates });
+  const { system, user: userMessage } = buildGrokPrompt({ tweetText, cashtag, user, userType, candidates, preferredChain });
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), live ? 22_000 : 8_000);
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
         : new Map<string, { address: string; chain: string }>();
 
     const filtered = filterSuggestions(parsed, cashtag);
-    const backfilled = backfillFromCandidates(filtered, candidates);
+    const backfilled = backfillFromCandidates(filtered, candidates, preferredChain);
     const suggestions = enrichWithBirdeye(backfilled, birdeyeMap);
 
     return NextResponse.json({ suggestions });

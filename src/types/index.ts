@@ -40,6 +40,8 @@ export interface SuggestRequest {
   userType?: "crypto" | "stock" | "mixed";
   /** Local index candidates — switches Grok from discovery mode to rank mode */
   candidates?: IndexToken[];
+  /** User's preferred chain (SOL, ETH, BASE…) — overrides Grok's chain bias for multi-chain tokens */
+  preferredChain?: string | null;
   /** true = use Grok live X search (slow ~10s, accurate); false = training data only (fast ~2s) */
   live?: boolean;
 }

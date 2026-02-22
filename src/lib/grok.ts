@@ -55,13 +55,17 @@ ${userTweets}`;
 
   // When local index candidates are provided, Grok ranks rather than discovers.
   // Prompt is ~100 tokens vs ~800 tokens — significantly faster.
+  const chainHint = req.preferredChain
+    ? `Preferred chain: ${req.preferredChain} — for tokens that exist on multiple chains (e.g. USDC, USDT, WBTC), always return the ${req.preferredChain} variant.`
+    : "";
+
   const taskLine = req.candidates?.length
     ? `Local index candidates for "${req.cashtag}": ${req.candidates
         .map((c) => `${c.ticker} (${c.name}${c.chain ? `, ${c.chain}` : c.exchange ? `, ${c.exchange}` : ""})`)
         .join(", ")}
-
+${chainHint ? `\n${chainHint}` : ""}
 Rank the candidates above by relevance to the tweet and user context. You may add 1-2 highly relevant suggestions not listed. Return up to 5 as a JSON array.`
-    : `Search X for cashtags matching "${req.cashtag}". Rank results by relevance to the tweet text. Return up to 5 as a JSON array.`;
+    : `Search X for cashtags matching "${req.cashtag}". Rank results by relevance to the tweet text.${chainHint ? ` ${chainHint}` : ""} Return up to 5 as a JSON array.`;
 
   const userMessage = `Cashtag input: "${req.cashtag}"
 ${tweetContext}

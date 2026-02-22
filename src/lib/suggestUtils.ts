@@ -26,19 +26,28 @@ export function filterSuggestions(parsed: unknown[], cashtag: string): CashtagSu
 // ---------------------------------------------------------------------------
 export function backfillFromCandidates(
   suggestions: CashtagSuggestion[],
-  candidates: IndexToken[] | undefined
+  candidates: IndexToken[] | undefined,
+  preferredChain?: string | null
 ): CashtagSuggestion[] {
   if (!candidates?.length) return suggestions;
-  const byTicker = new Map(candidates.map((c) => [c.ticker, c]));
+  // First-wins: candidates are sorted best-first (chain-preferred first).
+  // Using Map insertion order would let later entries overwrite the best match.
+  const byTicker = new Map<string, IndexToken>();
+  for (const c of candidates) {
+    if (!byTicker.has(c.ticker)) byTicker.set(c.ticker, c);
+  }
   return suggestions.map((s) => {
     const candidate = byTicker.get(s.ticker);
     if (!candidate) return s;
+    // Resolution order:
+    // 1. Candidate chain (index was built with chain preference in mind)
+    // 2. preferredChain (explicit user preference — overrides Grok's ETH bias
+    //    when the static fallback has chain: null)
+    // 3. Grok's chain (last resort — training data skews toward ETH)
+    const chain = (candidate.chain ?? preferredChain ?? s.chain ?? null) as CashtagSuggestion["chain"];
     return {
       ...s,
-      // Candidate chain is authoritative — it was chosen with the user's chain
-      // preference in mind. Grok's chain can be wrong for multi-chain tokens
-      // like USDC where training data skews toward ETH.
-      chain: (candidate.chain ?? s.chain ?? null) as CashtagSuggestion["chain"],
+      chain,
       // Only fill address if Grok didn't return one
       address: s.address ?? candidate.address ?? null,
     };

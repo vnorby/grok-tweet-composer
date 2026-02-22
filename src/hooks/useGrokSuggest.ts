@@ -151,9 +151,10 @@ export function useGrokSuggest(
 
     // Inject local index candidates so Grok ranks rather than discovers
     const candidates = searchIndex(index, debouncedReq.cashtag, debouncedReq.userType, preferredChain);
-    const reqWithCandidates = candidates.length > 0
-      ? { ...debouncedReq, candidates }
-      : debouncedReq;
+    const reqWithCandidates = {
+      ...(candidates.length > 0 ? { ...debouncedReq, candidates } : debouncedReq),
+      preferredChain: preferredChain ?? null,
+    };
 
     // Fast request — training data, no X search (~500ms–2s with edge runtime)
     fetch("/api/suggest", {
