@@ -11,12 +11,12 @@ import type { CashtagSuggestion, SuggestRequest, IndexToken } from "@/types";
 const CACHE_TTL = 120_000; // 2 minutes
 const resultCache = new Map<string, { suggestions: CashtagSuggestion[]; ts: number }>();
 
-function cacheKey(req: SuggestRequest): string {
-  return `${req.userType ?? "none"}:${req.cashtag.toLowerCase()}`;
+function cacheKey(req: SuggestRequest, chain?: string | null): string {
+  return `${req.userType ?? "none"}:${chain ?? "none"}:${req.cashtag.toLowerCase()}`;
 }
 
-function getCached(req: SuggestRequest): CashtagSuggestion[] | null {
-  const key = cacheKey(req);
+function getCached(req: SuggestRequest, chain?: string | null): CashtagSuggestion[] | null {
+  const key = cacheKey(req, chain);
   const entry = resultCache.get(key);
   if (!entry) return null;
   if (Date.now() - entry.ts > CACHE_TTL) {
@@ -26,8 +26,8 @@ function getCached(req: SuggestRequest): CashtagSuggestion[] | null {
   return entry.suggestions;
 }
 
-function setCached(req: SuggestRequest, suggestions: CashtagSuggestion[]) {
-  resultCache.set(cacheKey(req), { suggestions, ts: Date.now() });
+function setCached(req: SuggestRequest, suggestions: CashtagSuggestion[], chain?: string | null) {
+  resultCache.set(cacheKey(req, chain), { suggestions, ts: Date.now() });
 }
 
 // ---------------------------------------------------------------------------
@@ -35,8 +35,8 @@ function setCached(req: SuggestRequest, suggestions: CashtagSuggestion[]) {
 // ---------------------------------------------------------------------------
 
 /** Allow TweetComposer to seed the cache from its pre-warm effect */
-export function seedSuggestCache(req: SuggestRequest, suggestions: CashtagSuggestion[]) {
-  if (suggestions.length > 0) setCached(req, suggestions);
+export function seedSuggestCache(req: SuggestRequest, suggestions: CashtagSuggestion[], chain?: string | null) {
+  if (suggestions.length > 0) setCached(req, suggestions, chain);
 }
 
 /** True when every fast result has confidence ≥ 0.8 — skip live X search */
@@ -115,7 +115,7 @@ export function useGrokSuggest(
     if (req) {
       fastAbortRef.current?.abort();
       liveAbortRef.current?.abort();
-      const cached = getCached(req);
+      const cached = getCached(req, preferredChain);
       if (cached) {
         // Stale-while-revalidate: show cached results immediately
         setState({ suggestions: cached, loading: false, liveLoading: false, error: null });
@@ -127,7 +127,7 @@ export function useGrokSuggest(
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, req]);
+  }, [active, req, preferredChain]);
 
   // Adaptive debounce:
   //   50ms  — empty prefix ($ just typed) → near-instant prefetch
@@ -166,7 +166,7 @@ export function useGrokSuggest(
       .then((data) => {
         if (fastCtrl.signal.aborted) return;
         const suggestions: CashtagSuggestion[] = data.suggestions ?? [];
-        if (suggestions.length > 0) setCached(debouncedReq, suggestions);
+        if (suggestions.length > 0) setCached(debouncedReq, suggestions, preferredChain);
 
         // Skip live X search if Grok is already confident about all results
         const skipLive = isHighConfidence(suggestions);
@@ -201,7 +201,7 @@ export function useGrokSuggest(
             liveSuggestions.length > 0
               ? mergeSuggestions(s.suggestions, liveSuggestions)
               : s.suggestions;
-          if (merged.length > 0) setCached(debouncedReq, merged);
+          if (merged.length > 0) setCached(debouncedReq, merged, preferredChain);
           return { suggestions: merged, loading: s.loading, liveLoading: false, error: s.error };
         });
       })
@@ -216,7 +216,7 @@ export function useGrokSuggest(
       liveCtrl.abort();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedReq, index]);
+  }, [debouncedReq, index, preferredChain]);
 
   return state;
 }

@@ -68,7 +68,7 @@ export function TweetComposer({ activeUser, insight }: Props) {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.suggestions?.length > 0) seedSuggestCache(prewarmReq, data.suggestions);
+        if (data.suggestions?.length > 0) seedSuggestCache(prewarmReq, data.suggestions, insight?.preferredChain);
       })
       .catch(() => {});
   }, [activeUser]); // eslint-disable-line react-hooks/exhaustive-deps
