@@ -123,16 +123,17 @@ async function fetchCoinGecko(): Promise<IndexToken[]> {
       ).then((r) => (r.ok ? r.json() : []))
     )
   );
-  const coins: Array<{ id: string; symbol: string; name: string }> = pages.flat();
+  const coins: Array<{ id: string; symbol: string; name: string; market_cap?: number | null }> = pages.flat();
   return coins
     .filter((c) => c.symbol && c.name)
     .map((c) => ({
-      ticker:   c.symbol.toUpperCase().replace(/^\$+/, ""),
-      name:     c.name,
-      type:     "crypto" as const,
-      chain:    COINGECKO_CHAIN[c.id] ?? null,
-      address:  null,
-      exchange: null,
+      ticker:    c.symbol.toUpperCase().replace(/^\$+/, ""),
+      name:      c.name,
+      type:      "crypto" as const,
+      chain:     COINGECKO_CHAIN[c.id] ?? null,
+      address:   null,
+      exchange:  null,
+      marketCap: c.market_cap ?? null,
     }));
 }
 

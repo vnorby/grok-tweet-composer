@@ -15,15 +15,24 @@ const VALID_CASHTAG = /^[A-Za-z0-9]{0,10}$/;
 // Returns a map of SYMBOL → { address, chain } across all supported chains
 // ---------------------------------------------------------------------------
 
+// Reverse of BIRDEYE_CHAIN_MAP: our chain code → Birdeye network name
+const CHAIN_TO_BIRDEYE: Record<string, string> = {
+  SOL: "solana", ETH: "ethereum", ARB: "arbitrum", AVAX: "avalanche",
+  BSC: "bsc", POL: "polygon", BASE: "base", SUI: "sui", TON: "ton", APT: "aptos",
+};
+
 async function searchBirdeye(
   keyword: string,
   apiKey: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  preferredChain?: string | null
 ): Promise<Map<string, { address: string; chain: string }>> {
   const url = `https://public-api.birdeye.so/defi/token_search?keyword=${encodeURIComponent(keyword)}&sort_by=v24hUSD&sort_type=desc&offset=0&limit=20&verify_token=true`;
-  // No x-chain header → search all supported chains
+  const birdeyeNetwork = preferredChain ? CHAIN_TO_BIRDEYE[preferredChain] : undefined;
   const res = await fetch(url, {
-    headers: { "X-API-KEY": apiKey },
+    // When preferredChain is set, scope the search to that chain so Birdeye
+    // returns the correct variant (e.g. SOL USDC instead of ETH USDC).
+    headers: { "X-API-KEY": apiKey, ...(birdeyeNetwork ? { "x-chain": birdeyeNetwork } : {}) },
     signal,
   });
   if (!res.ok) return new Map();
@@ -146,7 +155,7 @@ export async function POST(req: NextRequest) {
         : callFast(system, userMessage, apiKey, controller.signal),
       // Only search Birdeye when the prefix is long enough to be meaningful
       birdeyeKey && cashtag.length >= 2
-        ? searchBirdeye(cashtag, birdeyeKey, controller.signal)
+        ? searchBirdeye(cashtag, birdeyeKey, controller.signal, preferredChain)
         : Promise.resolve(new Map<string, { address: string; chain: string }>()),
     ]);
 

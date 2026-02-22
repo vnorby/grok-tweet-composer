@@ -20,6 +20,8 @@ export interface CashtagSuggestion {
   exchange?: string | null;
   /** Grok confidence score 0–1. 0.9+ = well-known; <0.8 = uncertain/obscure. */
   confidence?: number;
+  /** USD market cap — backfilled from local index (CoinGecko), null if unknown */
+  marketCap?: number | null;
 }
 
 /** A token or stock entry from the local index */
@@ -30,6 +32,8 @@ export interface IndexToken {
   chain?: string | null;
   address?: string | null;
   exchange?: string | null;
+  /** USD market cap — populated from CoinGecko, null if unknown */
+  marketCap?: number | null;
 }
 
 export interface SuggestRequest {

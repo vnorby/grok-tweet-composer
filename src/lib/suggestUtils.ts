@@ -45,11 +45,14 @@ export function backfillFromCandidates(
     //    when the static fallback has chain: null)
     // 3. Grok's chain (last resort — training data skews toward ETH)
     const chain = (candidate.chain ?? preferredChain ?? s.chain ?? null) as CashtagSuggestion["chain"];
+    // If we changed the chain (Grok had ETH, we're forcing SOL), discard Grok's
+    // address — it would be the wrong chain's contract. Use candidate address instead.
+    const chainChanged = chain !== s.chain;
     return {
       ...s,
       chain,
-      // Only fill address if Grok didn't return one
-      address: s.address ?? candidate.address ?? null,
+      address: chainChanged ? (candidate.address ?? null) : (s.address ?? candidate.address ?? null),
+      marketCap: s.marketCap ?? candidate.marketCap ?? null,
     };
   });
 }

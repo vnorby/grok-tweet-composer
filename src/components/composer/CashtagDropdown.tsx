@@ -9,6 +9,13 @@ function truncateAddress(addr: string): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+function formatMarketCap(mc: number): string {
+  if (mc >= 1e12) return `$${(mc / 1e12).toFixed(1)}T`;
+  if (mc >= 1e9)  return `$${(mc / 1e9).toFixed(1)}B`;
+  if (mc >= 1e6)  return `$${Math.round(mc / 1e6)}M`;
+  return "";
+}
+
 interface Props {
   suggestions: CashtagSuggestion[];
   loading: boolean;
@@ -118,6 +125,11 @@ export function CashtagDropdown({
               {s.exchange && (
                 <span className="ml-1.5 text-xs font-normal" style={{ color: "var(--text-secondary)" }}>
                   {s.exchange}
+                </span>
+              )}
+              {s.marketCap != null && s.marketCap >= 1e6 && (
+                <span className="ml-1.5 text-xs font-normal" style={{ color: "var(--text-muted)" }}>
+                  {formatMarketCap(s.marketCap)}
                 </span>
               )}
             </p>
